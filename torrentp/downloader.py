@@ -1,8 +1,6 @@
 import asyncio
+import logging
 import time
-from pedros import get_logger
-
-logger = get_logger(__name__)
 
 from rich.progress import (
     BarColumn,
@@ -11,8 +9,10 @@ from rich.progress import (
     TaskProgressColumn,
     TextColumn,
     TimeRemainingColumn,
-    TransferSpeedColumn
+    TransferSpeedColumn,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Downloader:
@@ -30,15 +30,42 @@ class Downloader:
         self._paused = False
         self._stop_after_download = stop_after_download
 
+    def _get_sparse_storage_mode(self):
+        if self._lt is None:
+            return None
+
+        storage_mode = getattr(self._lt, 'storage_mode_t', None)
+        if storage_mode is not None and hasattr(storage_mode, 'storage_mode_sparse'):
+            return storage_mode.storage_mode_sparse
+
+        return getattr(self._lt, 'storage_mode_sparse', None)
+
+    def _build_add_torrent_params(self):
+        params = {'save_path': f'{self._save_path}'}
+        sparse_mode = self._get_sparse_storage_mode()
+        if sparse_mode is not None:
+            params['storage_mode'] = sparse_mode
+
+        if self._is_magnet:
+            self._add_torrent_params = self._torrent_info
+            self._add_torrent_params.save_path = self._save_path
+            try:
+                if sparse_mode is not None:
+                    self._add_torrent_params.storage_mode = sparse_mode
+            except Exception:
+                pass
+            return self._add_torrent_params
+
+        params['ti'] = self._torrent_info
+        return params
+
     def status(self):
         if self._file is None:
             if not self._is_magnet:
-                self._file = self._session.add_torrent({'ti': self._torrent_info, 'save_path': f'{self._save_path}'})
+                self._file = self._session.add_torrent(self._build_add_torrent_params())
                 logger.info(f"Torrent {self._file.status().name} added.")
             else:
-                self._add_torrent_params = self._torrent_info
-                self._add_torrent_params.save_path = self._save_path
-                self._file = self._session.add_torrent(self._add_torrent_params)
+                self._file = self._session.add_torrent(self._build_add_torrent_params())
                 logger.info("Fetching magnet metadata...")
                 while not self._file.has_metadata():
                     time.sleep(1)

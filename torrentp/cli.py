@@ -1,9 +1,15 @@
 from .torrent_downloader import TorrentDownloader
 import asyncclick as click
 import asyncio
-from pedros import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
+
+def configure_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s:%(name)s:%(message)s",
+    )
 
 async def handle_input(torrent_file):
     while True:
@@ -26,6 +32,8 @@ async def handle_input(torrent_file):
 @click.option('--save_path',  default='.', help="Path to save the file, default: '.' ", type=str)
 @click.option('--stop_after_download', is_flag=True, help="Stop the download immediately after completion without seeding")
 async def run_cli(link, download_speed, upload_speed, save_path, stop_after_download):
+    configure_logging()
+
     try:
         torrent_file = TorrentDownloader(link, save_path, stop_after_download=stop_after_download)
         

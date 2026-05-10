@@ -62,6 +62,14 @@ torrent_file.stop_download()
 ```python
 torrent_file = TorrentDownloader("magnet/torrent.file", '.', port=0000)
 ```
+#### How can I reduce memory usage for large torrents?
+
+```python
+torrent_file = TorrentDownloader("magnet/torrent.file", '.', low_memory=True)
+```
+
+This applies libtorrent's low-memory session profile. It can reduce RAM usage, but may also reduce download performance.
+
 #### How can I limit the upload or download speed?
 
 Download Using 0 (default number) means unlimited speed:
@@ -97,6 +105,16 @@ Example with all commands:
 ```sh
 $ torrentp --link 'magnet:...' --download_speed 100 --upload_speed 50 --save_path '.' --stop_after_download
 ```
+
+### Manual integration test
+
+You can run a manual download test against the Ubuntu 24.04.4 desktop ISO torrent:
+
+```sh
+python3 scripts/test_download_ubuntu.py
+```
+
+Edit the constants at the top of the script to change the torrent URL, save path, port, or `LOW_MEMORY` setting.
 
 ### To do list
 - [x] Limit upload and download speed
